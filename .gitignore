@@ -1,0 +1,24 @@
+# Arduino IDE Ignore Rules
+build/
+*.elf
+*.bin
+*.hex
+*.lst
+*.map
+*.o
+*.a
+*.ilk
+*.su
+*.pdb
+
+# Secret credentials (CRITICAL)
+secrets.h
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

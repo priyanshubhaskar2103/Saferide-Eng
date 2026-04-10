@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Vehicle Safety System — 3D Demo</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&display=swap');
+
+    :root {
+      --bg: #060810;
+      --bg2: #0b0f1c;
+      --bg3: #111827;
+      --panel: rgba(11, 15, 28, 0.92);
+      --border: rgba(56, 130, 210, 0.22);
+      --border-bright: rgba(56, 130, 210, 0.55);
+      --blue: #3882d2;
+      --blue-glow: rgba(56, 130, 210, 0.4);
+      --green: #3fc87a;
+      --green-glow: rgba(63, 200, 122, 0.35);
+      --red: #e84040;
+      --red-glow: rgba(232, 64, 64, 0.35);
+      --amber: #f5a623;
+      --amber-glow: rgba(245, 166, 35, 0.35);
+      --text: #c8d8f0;
+      --text-muted: #6a80a0;
+      --text-dim: #3a4a60;
+      --mono: 'Share Tech Mono', monospace;
+      --display: 'Barlow Condensed', sans-serif;
+      --body: 'Barlow', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #three-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    #hud {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: 260px 1fr 260px;
+      grid-template-rows: 56px 1fr 180px;
+      gap: 10px;
+      padding: 10px;
+    }
+
+    /* ── Reusable panel ── */
+    .panel {
+      pointer-events: all;
+      background: var(--panel);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-bottom: 0.5px solid var(--border);
+      font-family: var(--display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+
+    .panel-head .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+    }
+
+    .panel-body {
+      padding: 10px 12px;
+    }
+
+    /* ── Top bar ── */
+    #topbar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-radius: 6px;
+      background: var(--panel);
+      border: 0.5px solid var(--border);
+      backdrop-filter: blur(12px);
+      pointer-events: all;
+    }
+
+    .logo {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-badge {
+      background: var(--blue);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    .top-status-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .top-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .top-stat .label {
+      color: var(--text-muted);
+    }
+
+    .top-stat .val {
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .status-pip {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .pip-ok {
+      background: var(--green);
+      box-shadow: 0 0 5px var(--green-glow);
+    }
+
+    .pip-warn {
+      background: var(--amber);
+      box-shadow: 0 0 5px var(--amber-glow);
+    }
+
+    .pip-err {
+      background: var(--red);
+      box-shadow: 0 0 5px var(--red-glow);
+      animation: blink 0.8s infinite;
+    }
+
+    .pip-off {
+      background: var(--text-dim);
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: 0.2
+      }
+    }
+
+    /* ── Left column ── */
+    #left-col {
+      grid-column: 1;
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ── Right column ── */
+    #right-col {
+      grid-column: 3;
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ── Bottom bar ── */
+    #bottom-bar {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ── Sensor rows ── */
+    .sensor-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .sensor-row:last-child {
+      border-bottom: none;
+    }
+
+    .sensor-name {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sensor-val {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ── Bar meter ── */
+    .bar-wrap {
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease, background 0.4s;
+    }
+
+    /* ── GPS panel ── */
+    .gps-coord {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin: 4px 0;
+    }
+
+    .gps-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      width: 28px;
+    }
+
+    .gps-num {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: #7ec8ff;
+      letter-spacing: 0.04em;
+    }
+
+    .sat-row {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+      height: 18px;
+      margin-top: 6px;
+    }
+
+    .sat-bar {
+      width: 6px;
+      border-radius: 1px;
+      background: rgba(56, 130, 210, 0.18);
+      transition: background 0.3s;
+    }
+
+    .sat-bar.on {
+      background: var(--blue);
+    }
+
+    /* ── Serial monitor ── */
+    .serial-out {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: #40e0a0;
+      line-height: 1.75;
+      height: 88px;
+      overflow: hidden;
+    }
+
+    .serial-line {
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    .serial-prompt {
+      color: var(--text-dim);
+    }
+
+    /* ── Engine state ── */
+    .engine-big {
+      font-family: var(--display);
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.4s, text-shadow 0.4s;
+    }
+
+    .engine-on {
+      color: var(--green);
+      text-shadow: 0 0 20px var(--green-glow);
+    }
+
+    .engine-off {
+      color: var(--red);
+      text-shadow: 0 0 20px var(--red-glow);
+    }
+
+    /* ── Control buttons ── */
+    .ctrl-btn {
+      font-family: var(--display);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 4px;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-top: 6px;
+    }
+
+    .btn-sim-alc {
+      background: rgba(245, 166, 35, 0.08);
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .btn-sim-alc:hover {
+      background: rgba(245, 166, 35, 0.2);
+    }
+
+    .btn-sim-fire {
+      background: rgba(232, 64, 64, 0.08);
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .btn-sim-fire:hover {
+      background: rgba(232, 64, 64, 0.2);
+    }
+
+    .btn-sim-sos {
+      background: rgba(255, 0, 0, 0.1);
+      border-color: #ff0000;
+      color: #ff0000;
+      margin-top: 10px;
+    }
+
+    .btn-sim-sos:hover {
+      background: rgba(255, 0, 0, 0.2);
+    }
+
+    .btn-sim-sos.active {
+      background: rgba(255, 0, 0, 0.8);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.6);
+      animation: pulseAlertSos 1s infinite alternate;
+    }
+
+    @keyframes pulseAlertSos {
+      from { box-shadow: 0 0 10px rgba(255, 0, 0, 0.4); }
+      to { box-shadow: 0 0 30px rgba(255, 0, 0, 0.9); }
+    }
+
+    .btn-reset {
+      background: rgba(56, 130, 210, 0.08);
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .btn-reset:hover {
+      background: rgba(56, 130, 210, 0.2);
+    }
+
+    .btn-toggle-engine {
+      background: rgba(63, 200, 122, 0.08);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .btn-toggle-engine:hover {
+      background: rgba(63, 200, 122, 0.2);
+    }
+
+    /* ── Alert overlay ── */
+    #alert-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+    }
+
+    #alert-overlay.show {
+      display: flex;
+      animation: overlayIn 0.3s ease;
+    }
+
+    @keyframes overlayIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .alert-card {
+      background: #0d1020;
+      border: 1px solid;
+      border-radius: 10px;
+      padding: 28px 32px;
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+      animation: cardPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cardPop {
+      from {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .alert-card.alcohol {
+      border-color: var(--amber);
+      box-shadow: 0 0 40px var(--amber-glow);
+    }
+
+    .alert-card.fire {
+      border-color: var(--red);
+      box-shadow: 0 0 40px var(--red-glow);
+    }
+
+    .alert-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .alert-title {
+      font-family: var(--display);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .alert-title.alcohol {
+      color: var(--amber);
+    }
+
+    .alert-title.fire {
+      color: var(--red);
+    }
+
+    .alert-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .alert-sms {
+      background: rgba(255, 255, 255, 0.04);
+      border: 0.5px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: #a0e0c0;
+      text-align: left;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+
+    .sms-header {
+      color: var(--text-muted);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .alert-dismiss {
+      font-family: var(--display);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 24px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .alert-dismiss:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* ── Pin table ── */
+    .pin-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .pin-table td {
+      padding: 3px 4px;
+      font-family: var(--mono);
+      font-size: 10px;
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .pin-table td:first-child {
+      color: var(--text-muted);
+    }
+
+    .pin-table td:last-child {
+      color: var(--blue);
+      text-align: right;
+    }
+
+    .pin-table tr.active-pin td {
+      color: var(--green) !important;
+    }
+
+    /* ── Relay visualization ── */
+    .relay-vis {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .relay-box {
+      padding: 4px 10px;
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      border: 1px solid;
+      transition: all 0.3s;
+    }
+
+    .relay-box.on {
+      background: rgba(63, 200, 122, 0.12);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .relay-box.off {
+      background: rgba(232, 64, 64, 0.08);
+      border-color: rgba(232, 64, 64, 0.4);
+      color: rgba(232, 64, 64, 0.7);
+    }
+
+    .wire-seg {
+      height: 2px;
+      width: 18px;
+      border-radius: 1px;
+      background: #2a3a4a;
+      transition: background 0.3s;
+    }
+
+    .wire-seg.live {
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green-glow);
+    }
+
+    .motor-sym {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid #2a3a4a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 9px;
+      color: #2a3a4a;
+      transition: all 0.3s;
+    }
+
+    .motor-sym.on {
+      border-color: var(--green);
+      color: var(--green);
+      box-shadow: 0 0 8px var(--green-glow);
+      animation: motorSpin 0.7s linear infinite;
+    }
+
+    @keyframes motorSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── Scrollbar none ── */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* ── Scan line effect ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .center-area {
+      grid-column: 2;
+      grid-row: 2;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 10px;
+    }
+
+    .center-label {
+      font-family: var(--display);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .readout-small {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* ── Alcohol slowdown overlay ── */
+    #alc-slowdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    #alc-slowdown-overlay.show {
+      display: flex;
+    }
+
+    #alc-slowdown-card {
+      background: rgba(8, 6, 0, 0.92);
+      border: 1.5px solid var(--amber);
+      border-radius: 10px;
+      padding: 28px 38px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(245, 166, 35, 0.3);
+      animation: cardPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: all;
+    }
+
+    #alc-countdown-num {
+      font-family: var(--display);
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--amber);
+      line-height: 1;
+      text-shadow: 0 0 30px rgba(245, 166, 35, 0.6);
+    }
+
+    #alc-countdown-label {
+      font-family: var(--display);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-top: 6px;
+      margin-bottom: 14px;
+    }
+
+    #alc-speed-readout {
+      font-family: var(--mono);
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    #alc-gear-readout {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    #alc-lock-status {
+      font-family: var(--display);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--red);
+      padding: 6px 16px;
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    #alc-retest-btn {
+      margin-top: 14px;
+      font-family: var(--display);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 22px;
+      border-radius: 4px;
+      border: 1px solid var(--green);
+      background: rgba(63, 200, 122, 0.08);
+      color: var(--green);
+      cursor: pointer;
+      display: none;
+    }
+
+    #alc-retest-btn:hover {
+      background: rgba(63, 200, 122, 0.2);
+    }
+
+    #alc-lock-timer {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      display: none;
+    }
+
+    .bottom-panel-head {
+      font-family: var(--display);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      padding-bottom: 5px;
+      border-bottom: 0.5px solid var(--border);
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="three-canvas"></canvas>
+
+  <!-- Alert overlay -->
+  <div id="alert-overlay">
+    <div class="alert-card" id="alert-card">
+      <div class="alert-icon" id="alert-icon">⚠️</div>
+      <div class="alert-title" id="alert-title">ALERT</div>
+      <div class="alert-sub" id="alert-sub">System triggered.</div>
+      <div class="alert-sms">
+        <div class="sms-header">▶ GSM SMS SENT TO +91-XXXXXXXXXX</div>
+        <div id="sms-body"></div>
+      </div>
+      <button class="alert-dismiss" onclick="dismissAlert()">Acknowledge</button>
+    </div>
+  </div>
+
+  <!-- Alcohol Slowdown Overlay -->
+  <div id="alc-slowdown-overlay">
+    <div id="alc-slowdown-card">
+      <div
+        style="font-family:var(--display);font-size:11px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--amber);margin-bottom:8px">
+        ⚠ ALCOHOL DETECTED — SPEED LIMITING</div>
+      <div id="alc-countdown-num">10</div>
+      <div id="alc-countdown-label">seconds to full speed lock</div>
+      <div id="alc-speed-readout">82.4 km/h</div>
+      <div id="alc-gear-readout">GEAR: 4th → reducing...</div>
+      <div id="alc-lock-status" style="display:none">🔒 GEAR LOCKED — 1st ONLY · MAX 25 km/h</div>
+      <div id="alc-lock-timer"></div>
+      <button id="alc-retest-btn" onclick="retestDriver()">🧪 Re-test Driver</button>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+
+    <!-- TOP BAR -->
+    <div id="topbar">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="9" stroke="#3882d2" stroke-width="1" />
+          <circle cx="10" cy="10" r="5" fill="#3882d2" opacity="0.3" />
+          <circle cx="10" cy="10" r="2" fill="#3882d2" />
+        </svg>
+        Smart Vehicle Safety System
+        <span class="logo-badge">v2.0 — ESP32</span>
+      </div>
+      <div class="top-status-row">
+        <div class="top-stat">
+          <span class="status-pip pip-ok" id="pip-gps"></span>
+          <span class="label">GPS</span>
+          <span class="val" id="top-gps">LOCKED</span>
+        </div>
+        <div class="top-stat">
+          <span class="status-pip pip-ok" id="pip-gsm"></span>
+          <span class="label">TWILIO</span>
+          <span class="val" id="top-gsm">READY</span>
+        </div>
+        <div class="top-stat">
+          <span class="status-pip pip-ok" id="pip-esp"></span>
+          <span class="label">ESP32</span>
+          <span class="val">RUNNING</span>
+        </div>
+        <div class="top-stat">
+          <span class="status-pip pip-ok" id="pip-engine"></span>
+          <span class="label">ENGINE</span>
+          <span class="val" id="top-engine">ON</span>
+        </div>
+        <div class="top-stat">
+          <span class="label">UPTIME</span>
+          <span class="val" id="uptime-val">00:00:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEFT COL -->
+    <div id="left-col">
+
+      <!-- Sensors panel -->
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><span class="dot"></span>Sensor Readings</div>
+        <div class="panel-body">
+          <!-- Alcohol -->
+          <div style="margin-bottom:10px">
+            <div class="sensor-row">
+              <span class="sensor-name">
+                <span class="status-pip pip-ok" id="alc-pip"
+                  style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"></span>
+                MQ-3 Alcohol (GPIO34)
+              </span>
+              <span class="sensor-val" id="alc-val">0.12V</span>
+            </div>
+            <div class="bar-wrap">
+              <div class="bar-fill" id="alc-bar" style="width:8%;background:var(--green)"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:2px">
+              <span style="font-size:9px;color:var(--text-dim);font-family:var(--mono)">0.0V</span>
+              <span style="font-size:9px;color:var(--text-dim);font-family:var(--mono)">THRESHOLD: 1.8V</span>
+              <span style="font-size:9px;color:var(--text-dim);font-family:var(--mono)">5V (VCC)</span>
+            </div>
+          </div>
+          <!-- Flame -->
+          <div style="margin-bottom:10px">
+            <div class="sensor-row">
+              <span class="sensor-name">
+                <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"
+                  id="flame-pip"></span>
+                Flame Sensor (GPIO25)
+              </span>
+              <span class="sensor-val" id="flame-val">LOW</span>
+            </div>
+            <div class="bar-wrap">
+              <div class="bar-fill" id="flame-bar" style="width:4%;background:var(--green)"></div>
+            </div>
+          </div>
+          <!-- GPS sats -->
+          <div class="sensor-row">
+            <span class="sensor-name">GPS NEO-6M (GPIO16/17)</span>
+            <span class="sensor-val" id="sat-count">7 sats</span>
+          </div>
+          <div class="sensor-row">
+            <span class="sensor-name">MPU6050 Accel (GPIO26)</span>
+            <span class="sensor-val" id="accel-val">NORMAL (1.0G)</span>
+          </div>
+          <div class="sensor-row">
+            <span class="sensor-name">Battery Voltage</span>
+            <span class="sensor-val" id="bat-val">3.7V</span>
+          </div>
+          <div class="sensor-row">
+            <span class="sensor-name">Buzzer (GPIO22)</span>
+            <span class="sensor-val" id="buzzer-val" style="color:var(--text-dim)">SILENT</span>
+          </div>
+          <div class="sensor-row">
+            <span class="sensor-name">LED (GPIO21)</span>
+            <span class="sensor-val" id="led-val" style="color:var(--green)">ON</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulate panel -->
+      <div class="panel">
+        <div class="panel-head"><span class="dot" style="background:var(--amber)"></span>Simulation Controls</div>
+        <div class="panel-body">
+          <button class="ctrl-btn btn-sim-alc" onclick="simAlcohol()">Simulate Alcohol Detection</button>
+          <button class="ctrl-btn btn-sim-fire" onclick="simFire()">Simulate Fire Detection</button>
+          <button class="ctrl-btn btn-sim-fire" style="background:#1c0d0d; border-color:var(--red); color:var(--red)" onclick="simCollision()">💥 Simulate Collision</button>
+          <button class="ctrl-btn btn-sim-sos" id="sos-btn" onclick="toggleSOS()">🚨 SOS EMERGENCY (OFF)</button>
+          <button class="ctrl-btn btn-reset" onclick="resetSystem()">Reset System</button>
+          <button class="ctrl-btn btn-toggle-engine" onclick="toggleEngine()" id="engine-btn">Toggle Engine OFF</button>
+          <button class="ctrl-btn btn-reset" onclick="toggleMute()" id="mute-btn"
+            style="border-color:var(--text-dim);color:var(--text-muted);background:transparent;margin-top:2px">🔊 Mute
+            Buzzer</button>
+          <button class="ctrl-btn btn-reset" onclick="toggleDayNight()" id="time-btn"
+            style="border-color:var(--text-dim);color:var(--text-muted);background:transparent;margin-top:2px">☀️ Switch to Day Mode</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="center-area">
+      <div class="center-label" id="center-mode">Normal Operation</div>
+    </div>
+
+    <!-- RIGHT COL -->
+    <div id="right-col">
+
+      <!-- GPS panel -->
+      <div class="panel">
+        <div class="panel-head"><span class="dot" style="background:#7ec8ff"></span>GPS — NEO-6M</div>
+        <div class="panel-body">
+          <div class="gps-coord"><span class="gps-label">LAT</span><span class="gps-num" id="gps-lat">28.6139°N</span>
+          </div>
+          <div class="gps-coord"><span class="gps-label">LON</span><span class="gps-num" id="gps-lon">77.2090°E</span>
+          </div>
+          <div class="gps-coord"><span class="gps-label">ALT</span><span class="gps-num" id="gps-alt">216.4 m</span>
+          </div>
+          <div class="gps-coord"><span class="gps-label">SPD</span><span class="gps-num" id="gps-spd">0.0 km/h</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">Signal</span>
+            <div class="sat-row" id="sat-bars">
+              <div class="sat-bar on" style="height:5px"></div>
+              <div class="sat-bar on" style="height:8px"></div>
+              <div class="sat-bar on" style="height:11px"></div>
+              <div class="sat-bar on" style="height:15px"></div>
+              <div class="sat-bar on" style="height:18px"></div>
+              <div class="sat-bar" style="height:13px"></div>
+              <div class="sat-bar" style="height:9px"></div>
+            </div>
+          </div>
+          <div
+            style="margin-top:8px;padding:6px 8px;background:rgba(126,200,255,0.05);border:0.5px solid rgba(126,200,255,0.15);border-radius:4px">
+            <div style="font-size:9px;color:var(--text-dim);font-family:var(--mono);margin-bottom:3px">MAPS LINK (SMS)
+            </div>
+            <div style="font-size:9px;color:#7ec8ff;font-family:var(--mono);word-break:break-all" id="maps-link">
+              maps.google.com/?q=28.6139,77.2090</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Engine / Relay -->
+      <div class="panel">
+        <div class="panel-head"><span class="dot" style="background:var(--green)"></span>Engine & Relay</div>
+        <div class="panel-body">
+          <div class="engine-big engine-on" id="engine-label">ON</div>
+          <div class="relay-vis">
+            <div class="relay-box on" id="relay-box">RELAY</div>
+            <div class="wire-seg live" id="w1"></div>
+            <div class="wire-seg live" id="w2"></div>
+            <div class="motor-sym on" id="motor-sym">M</div>
+          </div>
+          <div style="font-size:10px;color:var(--text-muted);font-family:var(--mono);margin-top:4px">
+            GPIO23 → IN → <span id="relay-state-text" style="color:var(--green)">NO contact active</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Serial Monitor -->
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><span class="dot" style="background:var(--green)"></span>Serial Monitor — 115200 baud
+        </div>
+        <div class="panel-body" style="padding:8px 10px">
+          <div class="serial-out" id="serial-out"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div id="bottom-bar">
+
+      <!-- Pin map ESP32 -->
+      <div class="panel">
+        <div class="panel-body" style="padding:10px 12px">
+          <div class="bottom-panel-head">ESP32 Pin Map</div>
+          <table class="pin-table">
+            <tr>
+              <td>GPIO 16</td>
+              <td>GPS TX → RX</td>
+            </tr>
+            <tr>
+              <td>GPIO 17</td>
+              <td>GPS RX ← TX</td>
+            </tr>
+            <tr>
+              <td>GPIO 34</td>
+              <td>MQ-3 AO (ADC)</td>
+            </tr>
+            <tr id="pin-flame-row">
+              <td>GPIO 25</td>
+              <td>Flame Sensor DO</td>
+            </tr>
+            <tr id="pin-relay-row">
+              <td>GPIO 23</td>
+              <td>Relay IN</td>
+            </tr>
+            <tr>
+              <td>GPIO 22</td>
+              <td>Buzzer (+)</td>
+            </tr>
+            <tr>
+              <td>GPIO 21</td>
+              <td>LED (+)</td>
+            </tr>
+            <tr>
+              <td>GPIO 18</td>
+              <td>SOS Toggle Sw.</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- System log -->
+      <div class="panel">
+        <div class="panel-body" style="padding:10px 12px">
+          <div class="bottom-panel-head">System Event Log</div>
+          <div id="event-log"
+            style="font-family:var(--mono);font-size:9px;color:var(--text-muted);line-height:2;height:80px;overflow-y:auto;overflow-x:hidden;padding-right:4px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Power / modules -->
+      <div class="panel">
+        <div class="panel-body" style="padding:10px 12px">
+          <div class="bottom-panel-head">Power & Modules</div>
+          <div class="sensor-row">
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">3.7V LiPo Battery</span>
+            <span style="font-size:10px;color:var(--green);font-family:var(--mono)" id="bat-pct">84%</span>
+          </div>
+          <div class="bar-wrap" style="margin-bottom:6px">
+            <div class="bar-fill" id="bat-bar" style="width:84%;background:var(--green)"></div>
+          </div>
+          <div class="sensor-row">
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">MQ-3 VCC</span>
+            <span style="font-size:10px;color:var(--blue);font-family:var(--mono)">5V</span>
+          </div>
+          <div class="sensor-row">
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">Flame Sensor VCC</span>
+            <span style="font-size:10px;color:var(--blue);font-family:var(--mono)">3.3V</span>
+          </div>
+          <div class="sensor-row">
+            <span style="font-size:10px;color:var(--text-muted);font-family:var(--mono)">ESP32 VCC</span>
+            <span style="font-size:10px;color:var(--blue);font-family:var(--mono)">3.3V</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alert status -->
+      <div class="panel">
+        <div class="panel-body" style="padding:10px 12px">
+          <div class="bottom-panel-head">Alert Status</div>
+          <div class="sensor-row">
+            <span style="font-size:10px;font-family:var(--mono);color:var(--text-muted)">Alcohol trigger</span>
+            <span style="font-size:10px;font-family:var(--mono)" id="alc-status-txt"
+              style="color:var(--green)">NORMAL</span>
+          </div>
+          <div class="sensor-row">
+            <span style="font-size:10px;font-family:var(--mono);color:var(--text-muted)">Fire trigger</span>
+            <span style="font-size:10px;font-family:var(--mono)" id="fire-status-txt">NORMAL</span>
+          </div>
+          <div class="sensor-row">
+            <span style="font-size:10px;font-family:var(--mono);color:var(--text-muted)">SMS sent</span>
+            <span style="font-size:10px;font-family:var(--mono)" id="sms-sent-count">0</span>
+          </div>
+          <div class="sensor-row">
+            <span style="font-size:10px;font-family:var(--mono);color:var(--text-muted)">Last alert</span>
+            <span style="font-size:10px;font-family:var(--mono)" id="last-alert-time">—</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    // ─────────────────────────────────────────
+    // THREE.JS SCENE
+    // ─────────────────────────────────────────
+    const canvas = document.getElementById('three-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.setClearColor(0x060810, 1);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x060810, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 300);
+    camera.position.set(0, 5, 14);
+    camera.lookAt(0, 0, 0);
+
+    function resize() {
+      const w = window.innerWidth, h = window.innerHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Interactive Camera Controls
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.5;
+    controls.maxPolarAngle = Math.PI / 2 + 0.1; // Prevent going under ground extensively
+
+    // Lighting
+    const ambient = new THREE.AmbientLight(0x102030, 1.5);
+    scene.add(ambient);
+
+    const sun = new THREE.DirectionalLight(0x4488cc, 2.5);
+    sun.position.set(8, 12, 6);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.near = 0.1;
+    sun.shadow.camera.far = 50;
+    sun.shadow.camera.left = -15;
+    sun.shadow.camera.right = 15;
+    sun.shadow.camera.top = 15;
+    sun.shadow.camera.bottom = -15;
+    scene.add(sun);
+
+    let isDayMode = false;
+    function toggleDayNight() {
+      isDayMode = !isDayMode;
+      const btn = document.getElementById('time-btn');
+      if (isDayMode) {
+        renderer.setClearColor(0x7ec8ff, 1);
+        scene.fog.color.setHex(0x7ec8ff);
+        ambient.color.setHex(0xffffff);
+        ambient.intensity = 1.2;
+        sun.color.setHex(0xffffff);
+        sun.intensity = 3.0;
+        btn.innerHTML = '🌙 Switch to Night Mode';
+      } else {
+        renderer.setClearColor(0x060810, 1);
+        scene.fog.color.setHex(0x060810);
+        ambient.color.setHex(0x102030);
+        ambient.intensity = 1.5;
+        sun.color.setHex(0x4488cc);
+        sun.intensity = 2.5;
+        btn.innerHTML = '☀️ Switch to Day Mode';
+      }
+    }
+
+    const fillLight = new THREE.PointLight(0x0a2050, 3, 30);
+    fillLight.position.set(-8, 4, -4);
+    scene.add(fillLight);
+
+    const engineLight = new THREE.PointLight(0x3fc87a, 2, 8);
+    engineLight.position.set(0, 1, 2);
+    scene.add(engineLight);
+
+    // Ground grid
+    const gridHelper = new THREE.GridHelper(40, 40, 0x0d1830, 0x0d1830);
+    scene.add(gridHelper);
+
+    const groundGeo = new THREE.PlaneGeometry(40, 40);
+    const groundMat = new THREE.MeshLambertMaterial({ color: 0x060c16 });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Road
+    const roadGeo = new THREE.PlaneGeometry(4, 30);
+    const roadMat = new THREE.MeshLambertMaterial({ color: 0x0a1020 });
+    const road = new THREE.Mesh(roadGeo, roadMat);
+    road.rotation.x = -Math.PI / 2;
+    road.position.y = 0.001;
+    scene.add(road);
+
+    // Road markings - animated
+    const roadMarkings = [];
+    for (let i = -6; i <= 6; i++) {
+      const lineGeo = new THREE.PlaneGeometry(0.15, 1.2);
+      const lineMat = new THREE.MeshLambertMaterial({ color: 0x1a2840 });
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(0, 0.003, i * 2.2);
+      scene.add(line);
+      roadMarkings.push(line);
+    }
+
+    // Side lane lines
+    const laneLineMat = new THREE.MeshLambertMaterial({ color: 0x0f1e30 });
+    [-1.7, 1.7].forEach(x => {
+      for (let i = -6; i <= 6; i++) {
+        const lg = new THREE.PlaneGeometry(0.06, 40);
+        const lm = new THREE.Mesh(lg, laneLineMat);
+        lm.rotation.x = -Math.PI / 2;
+        lm.position.set(x, 0.002, 0);
+        scene.add(lm);
+      }
+    });
+
+    let muted = false;
+    function toggleMute() {
+      muted = !muted;
+      const btn = document.getElementById('mute-btn');
+      if (muted) {
+        stopBuzzer();
+        btn.textContent = '🔇  Unmute Buzzer';
+      } else {
+        btn.textContent = '🔊  Mute Buzzer';
+      }
+    }
+
+    // Wrap playBuzzerBeep to respect mute
+    const _playBuzzerBeep = playBuzzerBeep;
+    // Override startAlcoholBuzzer / startFireBuzzer to check mute
+    function startAlcoholBuzzer() { if (!muted) playBuzzerBeep(880, 660, 0.18, 0.1, 0); }
+    function startFireBuzzer() { if (!muted) playBuzzerBeep(1200, 1200, 0.12, 0.08, 0); }
+    function startSOSBuzzer() { if (!muted) playBuzzerBeep(1500, 1500, 0.3, 0.3, 0); }
+
+    const carGroup = new THREE.Group();
+
+    // Main body
+    const bodyGeo = new THREE.BoxGeometry(1.8, 0.55, 3.8);
+    const bodyMat = new THREE.MeshPhongMaterial({ color: 0x1a2a4a, shininess: 60, emissive: 0x050a15 });
+    const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+    bodyMesh.position.y = 0.55;
+    bodyMesh.castShadow = true;
+    carGroup.add(bodyMesh);
+
+    // Cabin
+    const cabinGeo = new THREE.BoxGeometry(1.5, 0.55, 2.0);
+    const cabinMat = new THREE.MeshPhongMaterial({ color: 0x0d1a30, shininess: 80, transparent: true, opacity: 0.85 });
+    const cabinMesh = new THREE.Mesh(cabinGeo, cabinMat);
+    cabinMesh.position.set(0, 1.1, -0.2);
+    cabinMesh.castShadow = true;
+    carGroup.add(cabinMesh);
+
+    // Hood
+    const hoodGeo = new THREE.BoxGeometry(1.7, 0.12, 1.2);
+    const hoodMesh = new THREE.Mesh(hoodGeo, bodyMat);
+    hoodMesh.position.set(0, 0.84, 1.3);
+    carGroup.add(hoodMesh);
+
+    // Bumpers
+    const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.25, 0.15), bodyMat);
+    frontBumper.position.set(0, 0.35, 1.98);
+    carGroup.add(frontBumper);
+    const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.25, 0.15), bodyMat);
+    rearBumper.position.set(0, 0.35, -1.98);
+    carGroup.add(rearBumper);
+
+    // Wheels
+    const wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.22, 18);
+    const wheelMat = new THREE.MeshPhongMaterial({ color: 0x0a0a0a });
+    const rimGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.24, 8);
+    const rimMat = new THREE.MeshPhongMaterial({ color: 0x3a4a5a, shininess: 120 });
+
+    const wheelPositions = [
+      [0.95, 0.32, 1.3], [-0.95, 0.32, 1.3],
+      [0.95, 0.32, -1.3], [-0.95, 0.32, -1.3]
+    ];
+    const wheels = [];
+    wheelPositions.forEach(pos => {
+      const wg = new THREE.Group();
+      const w = new THREE.Mesh(wheelGeo, wheelMat);
+      w.rotation.z = Math.PI / 2;
+      wg.add(w);
+      const r = new THREE.Mesh(rimGeo, rimMat);
+      r.rotation.z = Math.PI / 2;
+      wg.add(r);
+      wg.position.set(...pos);
+      wg.castShadow = true;
+      carGroup.add(wg);
+      wheels.push(wg);
+    });
+
+    // Headlights
+    const hlGeo = new THREE.BoxGeometry(0.25, 0.12, 0.05);
+    const hlMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.6 });
+    [-0.6, 0.6].forEach(x => {
+      const hl = new THREE.Mesh(hlGeo, hlMat);
+      hl.position.set(x, 0.62, 1.94);
+      carGroup.add(hl);
+      const hlLight = new THREE.SpotLight(0xffffff, 0.8, 12, 0.3);
+      hlLight.position.set(x, 0.62, 2.2);
+      hlLight.target.position.set(x, 0, 8);
+      scene.add(hlLight);
+      scene.add(hlLight.target);
+    });
+
+    // Tail lights
+    const tlMat = new THREE.MeshPhongMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 0.5 });
+    [-0.6, 0.6].forEach(x => {
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.1, 0.05), tlMat);
+      tl.position.set(x, 0.62, -1.94);
+      carGroup.add(tl);
+    });
+
+    // GPS antenna nub on roof
+    const antGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.18, 8);
+    const antMat = new THREE.MeshPhongMaterial({ color: 0x222222 });
+    const ant = new THREE.Mesh(antGeo, antMat);
+    ant.position.set(0.4, 1.42, -0.3);
+    carGroup.add(ant);
+    const antBlip = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshPhongMaterial({ color: 0x7ec8ff, emissive: 0x7ec8ff, emissiveIntensity: 1 }));
+    antBlip.position.set(0.4, 1.62, -0.3);
+    carGroup.add(antBlip);
+
+    scene.add(carGroup);
+    carGroup.position.set(0, 0, 0);
+
+    // ─── Sensor nodes ───
+    function makeNode(color, label) {
+      const g = new THREE.Group();
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.1, 0.16), new THREE.MeshPhongMaterial({ color, emissive: color, emissiveIntensity: 0.3 }));
+      g.add(box);
+      return g;
+    }
+
+    const alcNode = makeNode(0xf5a623, 'MQ3');
+    alcNode.position.set(-0.72, 1.1, 0.8);
+    carGroup.add(alcNode);
+
+    const flameNode = makeNode(0xe84040, 'FIRE');
+    flameNode.position.set(0.72, 0.65, 1.4);
+    carGroup.add(flameNode);
+
+    // ─── Fire Particle System ───
+    const fireParticles = [];
+    const fireGroup = new THREE.Group();
+    fireGroup.position.set(0.3, 0.9, 1.3); // on hood of car
+    carGroup.add(fireGroup);
+
+    const fireLight = new THREE.PointLight(0xff4400, 0, 6);
+    fireLight.position.set(0.3, 1.2, 1.3);
+    carGroup.add(fireLight);
+
+    function createFireParticle() {
+      const size = 0.08 + Math.random() * 0.18;
+      const geo = new THREE.SphereGeometry(size, 5, 5);
+      const mat = new THREE.MeshBasicMaterial({
+        color: Math.random() > 0.5 ? 0xff4400 : (Math.random() > 0.5 ? 0xff9900 : 0xffcc00),
+        transparent: true,
+        opacity: 0.85
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(
+        (Math.random() - 0.5) * 0.5,
+        Math.random() * 0.2,
+        (Math.random() - 0.5) * 0.3
+      );
+      mesh.userData = {
+        vx: (Math.random() - 0.5) * 0.012,
+        vy: 0.025 + Math.random() * 0.03,
+        vz: (Math.random() - 0.5) * 0.012,
+        life: 0,
+        maxLife: 25 + Math.floor(Math.random() * 20)
+      };
+      fireGroup.add(mesh);
+      fireParticles.push(mesh);
+    }
+
+    function updateFire() {
+      if (!fireAlert) return;
+
+      // spawn new particles
+      if (Math.random() < 0.6) createFireParticle();
+      // add smoke puff occasionally
+      if (Math.random() < 0.15) createSmokeParticle();
+
+      for (let i = fireParticles.length - 1; i >= 0; i--) {
+        const p = fireParticles[i];
+        const d = p.userData;
+        d.life++;
+        p.position.x += d.vx;
+        p.position.y += d.vy;
+        p.position.z += d.vz;
+        d.vy *= 0.98;
+        const ratio = d.life / d.maxLife;
+        p.material.opacity = 0.85 * (1 - ratio);
+        const scale = 1 + ratio * 1.5;
+        p.scale.setScalar(scale);
+        // shift colour from yellow → orange → red → dark
+        if (ratio < 0.3) p.material.color.setHex(0xffcc00);
+        else if (ratio < 0.6) p.material.color.setHex(0xff6600);
+        else p.material.color.setHex(0xcc2200);
+
+        if (d.life >= d.maxLife) {
+          fireGroup.remove(p);
+          fireParticles.splice(i, 1);
+        }
+      }
+
+      // flicker fire light
+      fireLight.intensity = 2.5 + Math.random() * 2;
+      fireLight.color.setHex(Math.random() > 0.5 ? 0xff4400 : 0xff8800);
+    }
+
+    // ─── Smoke Particle System ───
+    const smokeParticles = [];
+    const smokeGroup = new THREE.Group();
+    smokeGroup.position.set(0.3, 0.9, 1.3);
+    carGroup.add(smokeGroup);
+
+    function createSmokeParticle() {
+      const size = 0.12 + Math.random() * 0.2;
+      const grey = 0x333333 + Math.floor(Math.random() * 0x222222);
+      const geo = new THREE.SphereGeometry(size, 5, 5);
+      const mat = new THREE.MeshBasicMaterial({ color: grey, transparent: true, opacity: 0.35 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set((Math.random() - 0.5) * 0.4, 0.3 + Math.random() * 0.2, (Math.random() - 0.5) * 0.3);
+      mesh.userData = {
+        vx: (Math.random() - 0.5) * 0.008,
+        vy: 0.018 + Math.random() * 0.015,
+        vz: (Math.random() - 0.5) * 0.008,
+        life: 0,
+        maxLife: 50 + Math.floor(Math.random() * 30)
+      };
+      smokeGroup.add(mesh);
+      smokeParticles.push(mesh);
+    }
+
+    function updateSmoke() {
+      for (let i = smokeParticles.length - 1; i >= 0; i--) {
+        const p = smokeParticles[i];
+        const d = p.userData;
+        d.life++;
+        p.position.x += d.vx;
+        p.position.y += d.vy;
+        p.position.z += d.vz;
+        const ratio = d.life / d.maxLife;
+        p.material.opacity = 0.35 * (1 - ratio);
+        p.scale.setScalar(1 + ratio * 3);
+        if (d.life >= d.maxLife) {
+          smokeGroup.remove(p);
+          smokeParticles.splice(i, 1);
+        }
+      }
+    }
+
+    function clearFire() {
+      fireParticles.forEach(p => fireGroup.remove(p));
+      fireParticles.length = 0;
+      smokeParticles.forEach(p => smokeGroup.remove(p));
+      smokeParticles.length = 0;
+      fireLight.intensity = 0;
+    }
+    const satGroup = new THREE.Group();
+    const satData = [
+      { r: 9, tilt: 0.3, speed: 0.005, phase: 0 },
+      { r: 10.5, tilt: 0.8, speed: 0.004, phase: 1.5 },
+      { r: 8.5, tilt: 1.2, speed: 0.006, phase: 3.0 },
+      { r: 11, tilt: 0.5, speed: 0.003, phase: 4.5 },
+    ];
+    const satMeshes = satData.map(s => {
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.15, 0.15), new THREE.MeshPhongMaterial({ color: 0xaabbcc }));
+      g.add(body);
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, 0.18), new THREE.MeshPhongMaterial({ color: 0x1a3a7a }));
+      panel.position.set(0.42, 0, 0); g.add(panel);
+      const panel2 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.02, 0.18), new THREE.MeshPhongMaterial({ color: 0x1a3a7a }));
+      panel2.position.set(-0.42, 0, 0); g.add(panel2);
+      scene.add(g);
+      return { mesh: g, ...s };
+    });
+
+    // Signal beams to car
+    const beams = satMeshes.map(() => {
+      const geo = new THREE.BufferGeometry();
+      const mat = new THREE.LineBasicMaterial({ color: 0x3882d2, transparent: true, opacity: 0.2 });
+      const line = new THREE.Line(geo, mat);
+      scene.add(line);
+      return { line, geo, mat };
+    });
+
+    // Stars
+    const starVerts = [];
+    for (let i = 0; i < 2000; i++) {
+      const r = 100 + Math.random() * 80;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starVerts.push(r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x8899bb, size: 0.3, transparent: true, opacity: 0.6 })));
+
+    // ─────────────────────────────────────────
+    // AUDIO — Web Audio API Buzzers
+    // ─────────────────────────────────────────
+    let audioCtx = null;
+    let buzzerInterval = null;
+    let buzzerNodes = [];
+
+    function getAudioCtx() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function stopBuzzer() {
+      if (buzzerInterval) { clearInterval(buzzerInterval); buzzerInterval = null; }
+      buzzerNodes.forEach(n => { try { n.stop(); } catch (e) { } });
+      buzzerNodes = [];
+    }
+
+    function playBuzzerBeep(freq1, freq2, duration, gap, repeats) {
+      stopBuzzer();
+      const ctx = getAudioCtx();
+      let count = 0;
+      function beep() {
+        if (repeats > 0 && count >= repeats) { stopBuzzer(); return; }
+        count++;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const dist = ctx.createWaveShaper();
+
+        // Slight distortion for harsh buzzer tone
+        const curve = new Float32Array(256);
+        for (let i = 0; i < 256; i++) {
+          const x = (i * 2) / 256 - 1;
+          curve[i] = (Math.PI + 180) * x / (Math.PI + 180 * Math.abs(x));
+        }
+        dist.curve = curve;
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq1, ctx.currentTime);
+        if (freq2 !== freq1) osc.frequency.linearRampToValueAtTime(freq2, ctx.currentTime + duration * 0.5);
+
+        gain.gain.setValueAtTime(0.0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.01);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime + duration - 0.02);
+        gain.gain.linearRampToValueAtTime(0.0, ctx.currentTime + duration);
+
+        osc.connect(dist);
+        dist.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+        buzzerNodes.push(osc);
+      }
+      beep();
+      buzzerInterval = setInterval(beep, (duration + gap) * 1000);
+    }
+
+    // Alcohol: urgent two-tone (like a car alarm) — defined after mute logic below
+    // Fire: continuous rapid high-pitched fire alarm — defined after mute logic below
+
+    // ─────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────
+    let engineOn = true;
+    let alcoholAlert = false;
+    let fireAlert = false;
+    let sosAlert = false;
+    let collisionAlert = false;
+    let smsSentCount = 0;
+    let frame = 0;
+    let startTime = Date.now();
+    let roadSpeed = 0.22;         // normal speed (maps to ~82 km/h feel)
+    let currentSpeed = 82.4;      // displayed GPS speed
+    let gearLocked = false;       // true when limited to 1st gear after alcohol
+    let gearLockTimer = 0;        // seconds remaining on gear lock (10 min = 600s)
+    let alcSlowdownActive = false;
+    let alcCountdown = 10;
+    let alcCountdownInterval = null;
+    let gearLockInterval = null;
+
+    let lat = 28.6139, lon = 77.2090;
+    const serialLines = [];
+    const eventLines = [];
+
+    function addSerial(msg) {
+      serialLines.push(msg);
+      if (serialLines.length > 6) serialLines.shift();
+      document.getElementById('serial-out').innerHTML = serialLines.map(l => `<div>${l}</div>`).join('');
+    }
+
+    function addEvent(msg, color = 'var(--text-muted)') {
+      const now = new Date();
+      const ts = now.toTimeString().slice(0, 8);
+      eventLines.push(`<span style="color:var(--text-dim)">[${ts}]</span> <span style="color:${color}">${msg}</span>`);
+      if (eventLines.length > 100) eventLines.shift();
+      const logDiv = document.getElementById('event-log');
+      logDiv.innerHTML = eventLines.join('<br>');
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // Init serial
+    addSerial('<span style="color:#8899bb">[BOOT]</span> ESP32 initializing...');
+    addSerial('<span style="color:#8899bb">[GPS]</span>  NEO-6M module OK');
+    addSerial('<span style="color:#8899bb">[GSM]</span>  SIM800L registered');
+    addSerial('<span style="color:#8899bb">[MQ3]</span>  Sensor warm-up done');
+    addSerial('<span style="color:#8899bb">[SYS]</span>  All systems nominal');
+
+    addEvent('System boot complete', 'var(--green)');
+    addEvent('GPS locked — 7 satellites', 'var(--blue)');
+    addEvent('Engine ignition ON', 'var(--green)');
+
+    // ─────────────────────────────────────────
+    // UI FUNCTIONS
+    // ─────────────────────────────────────────
+    function setEngineState(on) {
+      engineOn = on;
+      document.getElementById('engine-label').textContent = on ? 'ON' : 'OFF';
+      document.getElementById('engine-label').className = on ? 'engine-big engine-on' : 'engine-big engine-off';
+      document.getElementById('relay-box').className = on ? 'relay-box on' : 'relay-box off';
+      document.getElementById('relay-box').textContent = 'RELAY';
+      ['w1', 'w2'].forEach(id => document.getElementById(id).className = on ? 'wire-seg live' : 'wire-seg');
+      document.getElementById('motor-sym').className = on ? 'motor-sym on' : 'motor-sym';
+      document.getElementById('relay-state-text').textContent = on ? 'NO contact active' : 'NC — circuit open';
+      document.getElementById('relay-state-text').style.color = on ? 'var(--green)' : 'var(--red)';
+      document.getElementById('top-engine').textContent = on ? 'ON' : 'OFF';
+      document.getElementById('pip-engine').className = on ? 'status-pip pip-ok' : 'status-pip pip-err';
+      document.getElementById('engine-btn').textContent = on ? 'Toggle Engine OFF' : 'Toggle Engine ON';
+      engineLight.color.setHex(on ? 0x3fc87a : 0x880000);
+      engineLight.intensity = on ? 2 : 0.5;
+    }
+
+    function simAlcohol() {
+      if (alcoholAlert) return;
+      alcoholAlert = true;
+
+      document.getElementById('alc-bar').style.width = '88%';
+      document.getElementById('alc-bar').style.background = 'var(--red)';
+      document.getElementById('alc-val').textContent = '4.40V';
+      document.getElementById('alc-val').style.color = 'var(--red)';
+      document.getElementById('alc-pip').style.background = 'var(--red)';
+      document.getElementById('alc-pip').style.boxShadow = '0 0 6px var(--red-glow)';
+      document.getElementById('buzzer-val').textContent = 'ALARM!';
+      document.getElementById('buzzer-val').style.color = 'var(--red)';
+      document.getElementById('alc-status-txt').textContent = 'TRIGGERED';
+      document.getElementById('alc-status-txt').style.color = 'var(--red)';
+      document.getElementById('center-mode').textContent = '⚠ ALCOHOL DETECTED';
+      document.getElementById('center-mode').style.color = 'var(--amber)';
+
+      smsSentCount++;
+      document.getElementById('sms-sent-count').textContent = smsSentCount;
+      document.getElementById('last-alert-time').textContent = new Date().toTimeString().slice(0, 8);
+
+      startAlcoholBuzzer();
+      addSerial('<span style="color:#f5a623">[MQ3]</span>  ALCOHOL > threshold! 4.40V');
+      addSerial('<span style="color:#f5a623">[SYS]</span>  Initiating speed reduction...');
+      addSerial('<span style="color:#3882d2">[TWL]</span>  Sending SMS via Twilio...');
+      addEvent('ALCOHOL DETECTED — Speed limiting', 'var(--amber)');
+      addEvent('SMS dispatched via Twilio', 'var(--blue)');
+
+      // Show slowdown overlay
+      alcSlowdownActive = true;
+      alcCountdown = 10;
+      const overlay = document.getElementById('alc-slowdown-overlay');
+      overlay.classList.add('show');
+      document.getElementById('alc-countdown-num').textContent = '10';
+      document.getElementById('alc-countdown-label').textContent = 'seconds to full speed lock';
+      document.getElementById('alc-lock-status').style.display = 'none';
+      document.getElementById('alc-retest-btn').style.display = 'none';
+      document.getElementById('alc-lock-timer').style.display = 'none';
+
+      const startingSpeed = currentSpeed;
+      const gears = ['4th', '3rd', '2nd', '1st'];
+
+      alcCountdownInterval = setInterval(() => {
+        alcCountdown--;
+        const ratio = alcCountdown / 10;
+        currentSpeed = 25 + (startingSpeed - 25) * ratio;
+        roadSpeed = 0.07 + (0.22 - 0.07) * ratio;
+
+        const gearIdx = Math.floor((1 - ratio) * 3);
+        const gear = gears[Math.min(gearIdx, 3)];
+
+        document.getElementById('alc-countdown-num').textContent = alcCountdown;
+        document.getElementById('alc-speed-readout').textContent = currentSpeed.toFixed(1) + ' km/h';
+        document.getElementById('alc-gear-readout').textContent = `GEAR: ${gear} — reducing...`;
+        addSerial(`<span style="color:#f5a623">[SYS]</span>  Speed: ${currentSpeed.toFixed(0)} km/h → ${gear} gear`);
+
+        if (alcCountdown <= 0) {
+          clearInterval(alcCountdownInterval);
+          alcCountdownInterval = null;
+
+          // Lock at 1st gear
+          gearLocked = true;
+          currentSpeed = 22 + Math.random() * 5;
+          roadSpeed = 0.07;
+          engineOn = true; // engine stays ON but speed-limited
+
+          document.getElementById('alc-countdown-num').textContent = '🔒';
+          document.getElementById('alc-countdown-label').textContent = 'Speed locked — 1st gear only';
+          document.getElementById('alc-speed-readout').textContent = currentSpeed.toFixed(1) + ' km/h';
+          document.getElementById('alc-gear-readout').textContent = 'GEAR: 1st — MAX 25 km/h';
+          document.getElementById('alc-lock-status').style.display = 'inline-block';
+          document.getElementById('alc-lock-timer').style.display = 'block';
+
+          addSerial('<span style="color:#e84040">[SYS]</span>  GEAR LOCKED → 1st only');
+          addEvent('Gear locked — 1st only · max 25 km/h', 'var(--red)');
+
+          // Show retest button after 5s (simulate 10 min in demo)
+          gearLockTimer = 600; // 10 minutes in seconds
+          document.getElementById('alc-lock-timer').textContent = `Re-test unlocks in: 10:00`;
+
+          gearLockInterval = setInterval(() => {
+            gearLockTimer--;
+            const mm = String(Math.floor(gearLockTimer / 60)).padStart(2, '0');
+            const ss = String(gearLockTimer % 60).padStart(2, '0');
+            document.getElementById('alc-lock-timer').textContent = `Re-test unlocks in: ${mm}:${ss}`;
+
+            // Slight speed wobble while locked
+            currentSpeed = 22 + Math.random() * 4;
+            document.getElementById('alc-speed-readout').textContent = currentSpeed.toFixed(1) + ' km/h';
+
+            if (gearLockTimer <= 0 || gearLockTimer === 595) { // show after 5s for demo
+              document.getElementById('alc-retest-btn').style.display = 'inline-block';
+              document.getElementById('alc-lock-timer').textContent = 'Re-test available now';
+              if (gearLockTimer <= 0) clearInterval(gearLockInterval);
+            }
+          }, 1000);
+
+          // Show alert popup after gear locks
+          showAlert('alcohol',
+            'DUI Alert — Speed Limited',
+            'MQ-3 exceeded threshold (4.40V > 1.8V).\nVehicle limited to 1st gear · max 25 km/h.\nEmergency contacts notified.',
+            `ALERT! Drunk driver detected\n\nAlcohol: 4.40V (HIGH)\nGear: LOCKED — 1st only\nMax Speed: 25 km/h\n\nLocation:\nmaps.google.com/?q=${lat.toFixed(4)},${lon.toFixed(4)}\n\nTime: ${new Date().toLocaleTimeString()}`
+          );
+        }
+      }, 1000);
+    }
+
+    function retestDriver() {
+      // Simulate re-test — pass clears lock
+      addSerial('<span style="color:#3fc87a">[MQ3]</span>  Re-test initiated...');
+      document.getElementById('alc-retest-btn').textContent = 'Testing...';
+      document.getElementById('alc-retest-btn').style.pointerEvents = 'none';
+      setTimeout(() => {
+        const pass = Math.random() > 0.4; // 60% chance pass for demo
+        if (pass) {
+          addSerial('<span style="color:#3fc87a">[MQ3]</span>  Re-test PASSED — 0.18V');
+          addSerial('<span style="color:#3fc87a">[SYS]</span>  Gear lock RELEASED');
+          addEvent('Re-test passed — speed restored', 'var(--green)');
+          gearLocked = false;
+          alcoholAlert = false;
+          currentSpeed = 75 + Math.random() * 10;
+          roadSpeed = 0.22;
+          clearInterval(gearLockInterval);
+          document.getElementById('alc-slowdown-overlay').classList.remove('show');
+          document.getElementById('center-mode').textContent = 'Normal Operation';
+          document.getElementById('center-mode').style.color = 'var(--text-dim)';
+        } else {
+          addSerial('<span style="color:#e84040">[MQ3]</span>  Re-test FAILED — 3.90V');
+          addEvent('Re-test FAILED — still locked', 'var(--red)');
+          document.getElementById('alc-retest-btn').textContent = '🧪 Re-test Driver';
+          document.getElementById('alc-retest-btn').style.pointerEvents = 'all';
+          document.getElementById('alc-lock-timer').textContent = 'Re-test failed — try again';
+        }
+      }, 3000);
+    }
+
+    function simFire() {
+      if (fireAlert) return;
+      fireAlert = true;
+      setEngineState(false);
+      document.getElementById('flame-bar').style.width = '95%';
+      document.getElementById('flame-bar').style.background = 'var(--red)';
+      document.getElementById('flame-val').textContent = 'HIGH';
+      document.getElementById('flame-val').style.color = 'var(--red)';
+      document.getElementById('flame-pip').style.background = 'var(--red)';
+      document.getElementById('flame-pip').style.boxShadow = '0 0 6px var(--red-glow)';
+      document.getElementById('buzzer-val').textContent = 'ALARM!';
+      document.getElementById('buzzer-val').style.color = 'var(--red)';
+      document.getElementById('fire-status-txt').textContent = 'TRIGGERED';
+      document.getElementById('fire-status-txt').style.color = 'var(--red)';
+      document.getElementById('center-mode').textContent = '🔥 FIRE DETECTED';
+      document.getElementById('center-mode').style.color = 'var(--red)';
+
+      smsSentCount++;
+      document.getElementById('sms-sent-count').textContent = smsSentCount;
+      document.getElementById('last-alert-time').textContent = new Date().toTimeString().slice(0, 8);
+
+      startFireBuzzer();
+      addSerial('<span style="color:#e84040">[FIRE]</span> Flame sensor HIGH! (3.3V logic)');
+      addSerial('<span style="color:#e84040">[RLY]</span>  Relay OFF → Engine STOP');
+      addSerial('<span style="color:#3882d2">[TWL]</span>  Emergency SMS via Twilio!');
+      addEvent('FIRE DETECTED — Engine killed', 'var(--red)');
+      addEvent('Emergency SMS via Twilio dispatched', 'var(--red)');
+
+      showAlert('fire',
+        'Fire Hazard Detected',
+        'Flame sensor triggered (GPIO25 = HIGH, 3.3V logic).\nEngine shut down. Emergency services notified via Twilio.',
+        `EMERGENCY! Fire in vehicle\n\nSensor: Flame (GPIO25, 3.3V)\nEngine: FORCE STOPPED\n\nLocation:\nmaps.google.com/?q=${lat.toFixed(4)},${lon.toFixed(4)}\n\nTime: ${new Date().toLocaleTimeString()}`
+      );
+    }
+
+    function simCollision() {
+      if (collisionAlert) return;
+      collisionAlert = true;
+
+      // Stop immediately
+      currentSpeed = 0;
+      roadSpeed = 0;
+      
+      // Update HUD
+      document.getElementById('accel-val').textContent = 'CRASH DETECTED (8.5G)';
+      document.getElementById('accel-val').style.color = 'var(--red)';
+      document.getElementById('center-mode').textContent = '💥 CRASH EXCEEDED LIMIT';
+      document.getElementById('center-mode').style.color = 'var(--red)';
+
+      addSerial('<span style="color:#e84040">[MPU]</span> ACCEL LIMIT EXCEEDED!');
+      addEvent('Collision detection triggered (> 8G)', 'var(--red)');
+
+      // Dramatic Screen Flash Effect
+      const flash = document.createElement('div');
+      flash.style.position = 'fixed';
+      flash.style.top = '0'; flash.style.left = '0'; flash.style.width = '100vw'; flash.style.height = '100vh';
+      flash.style.background = 'white'; flash.style.zIndex = '9999'; flash.style.opacity = '0.9';
+      flash.style.transition = 'opacity 0.2s';
+      flash.style.pointerEvents = 'none';
+      document.body.appendChild(flash);
+      setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 250); }, 50);
+
+      // Instantly trigger SOS protocol (Hazards, SMS)
+      if (!sosAlert) toggleSOS();
+
+      // Sequence chain: 2.5 seconds later, auto-ignite fire due to crash damage
+      setTimeout(() => {
+        if (!fireAlert) {
+            addSerial('<span style="color:#f5a623">[SYS]</span> Critical containment failure. Fire initiating...');
+            simFire();
+        }
+      }, 2500);
+    }
+
+    function toggleSOS() {
+      if (sosAlert) {
+        resetSystem();
+      } else {
+        sosAlert = true;
+        setEngineState(false);
+        document.getElementById('sos-btn').textContent = '🚨 SOS EMERGENCY (ACTIVE)';
+        document.getElementById('sos-btn').classList.add('active');
+        document.getElementById('buzzer-val').textContent = 'SOS ALARM!';
+        document.getElementById('buzzer-val').style.color = 'var(--red)';
+        document.getElementById('center-mode').textContent = '🚨 SOS TRIGGERED';
+        document.getElementById('center-mode').style.color = 'var(--red)';
+
+        currentSpeed = 0;
+        roadSpeed = 0;
+
+        smsSentCount++;
+        document.getElementById('sms-sent-count').textContent = smsSentCount;
+        document.getElementById('last-alert-time').textContent = new Date().toTimeString().slice(0, 8);
+
+        startSOSBuzzer();
+        addSerial('<span style="color:#e84040">[SOS]</span> Override Switch TOGGLED ON!');
+        addSerial('<span style="color:#e84040">[RLY]</span>  Relay OFF → Engine FORCE STOP');
+        addSerial('<span style="color:#3882d2">[TWL]</span>  Dispatching EMERGENCY SOS to Hospitals/Police!');
+        addEvent('SOS Switch activated — Vehicle stopped', 'var(--red)');
+        addEvent('Emergency broadcast dispatched', 'var(--red)');
+
+        showAlert('fire',
+          'SOS Emergency Triggered',
+          'Passenger activated the SOS override switch. Vehicle halted immediately.',
+          `** EMERGENCY SOS **\n\nAlert: Manual SOS Lever Activated\nAssistance required IMMEDIATELY.\nEngine Status: DISABLED\n\nGPS coords:\nmaps.google.com/?q=${lat.toFixed(4)},${lon.toFixed(4)}\n\nTime: ${new Date().toLocaleTimeString()}`
+        );
+      }
+    }
+
+    function resetSystem() {
+      alcoholAlert = false;
+      fireAlert = false;
+      sosAlert = false;
+      collisionAlert = false;
+      setEngineState(true);
+      document.getElementById('accel-val').textContent = 'NORMAL (1.0G)';
+      document.getElementById('accel-val').style.color = 'var(--text)';
+      document.getElementById('alc-bar').style.width = '8%';
+      document.getElementById('alc-bar').style.background = 'var(--green)';
+      document.getElementById('alc-val').textContent = '0.12V';
+      document.getElementById('alc-val').style.color = 'var(--text)';
+      document.getElementById('alc-pip').style.background = 'var(--green)';
+      document.getElementById('alc-pip').style.boxShadow = '';
+      document.getElementById('flame-bar').style.width = '4%';
+      document.getElementById('flame-bar').style.background = 'var(--green)';
+      document.getElementById('flame-val').textContent = 'LOW';
+      document.getElementById('flame-val').style.color = 'var(--text)';
+      document.getElementById('flame-pip').style.background = 'var(--green)';
+      document.getElementById('flame-pip').style.boxShadow = '';
+      document.getElementById('buzzer-val').textContent = 'SILENT';
+      document.getElementById('buzzer-val').style.color = 'var(--text-dim)';
+      document.getElementById('alc-status-txt').textContent = 'NORMAL';
+      document.getElementById('alc-status-txt').style.color = 'var(--green)';
+      document.getElementById('fire-status-txt').textContent = 'NORMAL';
+      document.getElementById('fire-status-txt').style.color = '';
+      document.getElementById('sos-btn').classList.remove('active');
+      document.getElementById('sos-btn').textContent = '🚨 SOS EMERGENCY (OFF)';
+      document.getElementById('center-mode').textContent = 'Normal Operation';
+      document.getElementById('center-mode').style.color = 'var(--text-dim)';
+      stopBuzzer();
+      clearFire();
+      gearLocked = false;
+      alcSlowdownActive = false;
+      currentSpeed = 82.4;
+      roadSpeed = 0.22;
+      if (alcCountdownInterval) { clearInterval(alcCountdownInterval); alcCountdownInterval = null; }
+      if (gearLockInterval) { clearInterval(gearLockInterval); gearLockInterval = null; }
+      document.getElementById('alc-slowdown-overlay').classList.remove('show');
+      addSerial('<span style="color:#3fc87a">[SYS]</span>  System RESET');
+      addSerial('<span style="color:#3fc87a">[RLY]</span>  Relay ON → Engine START');
+      addEvent('System reset — all clear', 'var(--green)');
+    }
+
+    function toggleEngine() {
+      setEngineState(!engineOn);
+      addSerial(`<span style="color:#3882d2">[RLY]</span>  Engine manually ${engineOn ? 'ON' : 'OFF'}`);
+      addEvent(`Engine manually toggled ${engineOn ? 'ON' : 'OFF'}`, engineOn ? 'var(--green)' : 'var(--amber)');
+    }
+
+    function showAlert(type, title, sub, sms) {
+      const overlay = document.getElementById('alert-overlay');
+      const card = document.getElementById('alert-card');
+      card.className = `alert-card ${type}`;
+      document.getElementById('alert-icon').textContent = type === 'alcohol' ? '🍺' : '🔥';
+      document.getElementById('alert-title').textContent = title;
+      document.getElementById('alert-title').className = `alert-title ${type}`;
+      document.getElementById('alert-sub').textContent = sub;
+      document.getElementById('sms-body').textContent = sms;
+      overlay.classList.add('show');
+    }
+
+    function dismissAlert() {
+      document.getElementById('alert-overlay').classList.remove('show');
+      stopBuzzer();
+    }
+
+    // ─────────────────────────────────────────
+    // ANIMATION LOOP
+    // ─────────────────────────────────────────
+    function animate() {
+      requestAnimationFrame(animate);
+      frame++;
+
+      const t = frame * 0.01;
+
+      // Update interactive camera
+      controls.update();
+
+      // Uptime
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const hh = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+      const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+      const ss = String(elapsed % 60).padStart(2, '0');
+      document.getElementById('uptime-val').textContent = `${hh}:${mm}:${ss}`;
+
+      // Wheel spin if engine on
+      if (engineOn) {
+        wheels.forEach(w => { w.children[0].rotation.x += roadSpeed; });
+        // Scroll road markings forward to simulate movement
+        roadMarkings.forEach(mark => {
+          mark.position.z -= roadSpeed;
+          if (mark.position.z < -14) mark.position.z += 28.6;
+        });
+      }
+
+      // Satellite orbits
+      satMeshes.forEach((s, i) => {
+        const angle = s.phase + frame * s.speed;
+        const x = Math.cos(angle) * s.r;
+        const y = Math.sin(angle) * s.r * Math.sin(s.tilt) + 4;
+        const z = Math.sin(angle) * s.r * Math.cos(s.tilt);
+        s.mesh.position.set(x, y, z);
+        s.mesh.rotation.y += 0.015;
+
+        const beam = beams[i];
+        const carWorldPos = new THREE.Vector3(0, 1.3, 0);
+        const positions = new Float32Array([x, y, z, carWorldPos.x, carWorldPos.y, carWorldPos.z]);
+        beam.geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        beam.geo.attributes.position.needsUpdate = true;
+        beam.mat.opacity = 0.08 + 0.12 * Math.abs(Math.sin(t * 1.5 + i));
+      });
+
+      // GPS drift
+      if (frame % 60 === 0) {
+        lat = 28.6139 + (Math.random() - 0.5) * 0.002;
+        lon = 77.2090 + (Math.random() - 0.5) * 0.002;
+        document.getElementById('gps-lat').textContent = lat.toFixed(4) + '°N';
+        document.getElementById('gps-lon').textContent = lon.toFixed(4) + '°E';
+        document.getElementById('gps-alt').textContent = (216.4 + (Math.random() - 0.5) * 2).toFixed(1) + ' m';
+        document.getElementById('gps-spd').textContent = engineOn ? currentSpeed.toFixed(1) + ' km/h' : '0.0 km/h';
+        document.getElementById('maps-link').textContent = `maps.google.com/?q=${lat.toFixed(4)},${lon.toFixed(4)}`;
+        const satN = Math.floor(6 + Math.abs(Math.sin(t * 0.3)) * 3);
+        document.getElementById('sat-count').textContent = `${satN} sats`;
+        const bars = document.querySelectorAll('.sat-bar');
+        bars.forEach((b, i) => b.classList.toggle('on', i < Math.floor(satN * 0.8)));
+        if (!alcoholAlert && !gearLocked) {
+          currentSpeed = 75 + Math.random() * 15;
+          roadSpeed = 0.20 + Math.random() * 0.04;
+          const alcV = 0.10 + Math.random() * 0.08;
+          document.getElementById('alc-val').textContent = alcV.toFixed(2) + 'V';
+          document.getElementById('alc-bar').style.width = (alcV / 5 * 100).toFixed(1) + '%';
+        }
+      }
+      document.getElementById('bat-val').textContent = (3.68 + Math.random() * 0.06).toFixed(2) + 'V';
+
+      if (frame % 180 === 0 && !alcoholAlert && !fireAlert) {
+        addSerial(`<span style="color:#8899bb">[GPS]</span>  ${lat.toFixed(4)},${lon.toFixed(4)}`);
+      }
+
+      // Antenna pulse
+      antBlip.material.emissiveIntensity = 0.5 + 0.5 * Math.abs(Math.sin(t * 4));
+
+      // Alcohol sensor node flicker
+      if (alcoholAlert) {
+        alcNode.children[0].material.emissiveIntensity = 0.3 + 0.7 * Math.abs(Math.sin(t * 8));
+        engineLight.color.setHex(0x880000);
+      }
+      if (fireAlert) {
+        flameNode.children[0].material.emissiveIntensity = 0.3 + 0.7 * Math.abs(Math.sin(t * 12));
+        engineLight.color.setHex(0xff2200);
+        engineLight.intensity = 1 + Math.abs(Math.sin(t * 10));
+      }
+      
+      if (sosAlert) {
+        const pulse = (Math.floor(t * 6) % 2 === 0);
+        hlMat.emissiveIntensity = pulse ? 1.5 : 0.2;
+        hlMat.color.setHex(0xffaa00);
+        tlMat.emissiveIntensity = pulse ? 2.0 : 0.5;
+        if (!fireAlert && !alcoholAlert) {
+          engineLight.color.setHex(0xffaa00);
+          engineLight.intensity = pulse ? 2 : 0;
+        }
+      } else {
+        hlMat.emissiveIntensity = 0.6;
+        hlMat.color.setHex(0xffffff);
+        tlMat.emissiveIntensity = 0.5;
+      }
+
+      // Fire & smoke particles
+      updateFire();
+      updateSmoke();
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+
+</html>
