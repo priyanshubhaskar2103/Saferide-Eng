@@ -144,28 +144,6 @@ The MQ-3 is an ambient air sensor, not a breath-specific sensor. To reduce false
 
 ---
 
-## 📁 Project Structure
-
-```
-saferide-sentinel/
-├── src/
-│   ├── main.cpp              # Entry point, FreeRTOS task setup
-│   ├── sensors.cpp           # MQ-3, flame, button logic (Core 0)
-│   ├── gps.cpp               # NEO-6M parsing via TinyGPS++ (Core 1)
-│   ├── communication.cpp     # Twilio SMS/call functions (Core 1)
-│   └── relay.cpp             # Relay and speed control logic
-├── include/
-│   ├── config.h              # Pin definitions, thresholds, Twilio credentials
-│   └── shared_state.h        # Volatile shared flags between tasks
-├── simulation/
-│   └── saferide_simulation.html   # Browser-based 3D system demo
-├── docs/
-│   └── circuit_diagram.png   # Wiring schematic
-└── README.md
-```
-
----
-
 ## 🚀 Setup & Flashing
 
 **Prerequisites:**
