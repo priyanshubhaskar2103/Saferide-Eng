@@ -5,7 +5,7 @@
 
 | Team | SafeRide Engineers |
 | :---- | :---- |
-| **Team ID** | SCHII103 |
+| **Team ID** | SCHI103 |
 | **Members** | Priyanshu Bhaskar  •  Somya Agarwal  •  Preeti Patel  •  Raj Sisoudia |
 | **Event** | Innovate Bharat Hackathon 2026 — Sharda University |
 | **Track** | School Student Innovation (SCHI103) |
