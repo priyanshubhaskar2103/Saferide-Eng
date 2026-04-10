@@ -2,7 +2,7 @@
 
 > **An embedded vehicle safety system for real-time alcohol detection, fire hazard monitoring, and emergency response.**
 
-Built for the **Innovate Bharat Hackathon 2026** — School Student Innovation Track (SCHII103)
+Built for the **Innovate Bharat Hackathon 2026** — School Student Innovation Track (SCHI103)
 Hosted by **Sharda University**
 
 ---
